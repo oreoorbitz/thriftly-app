@@ -26,6 +26,7 @@ class ShopifyController extends Controller
 
     public function getProducts()
     {
+        dd('For developer only.');
         set_time_limit(1000);
         $count = $this->countProducts();
         $total_page = ceil($count['count']/50);
