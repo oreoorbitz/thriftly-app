@@ -44,6 +44,7 @@ class productUpdate extends Command
      */
     public function handle()
     {
+        $total_update = 0;
         $count = $this->countProducts();
         $total_page = ceil($count['count']/50);
         $page = 1;
@@ -92,9 +93,11 @@ class productUpdate extends Command
                         )
                     );
                     $response = $this->shopifyService->updateProductVariant($variant['id'], $variantData);
+                    $this->info($value['handle']." => Updated.");
+                    $total_update++;
                     // $this->mailSend();
                     if($round_count == 9 || $round_count >= 16){
-                        // event(new PodcastProcessed()); //--Remove this product watchlist.
+                        //--Remove this product watchlist.
                     }
                 }
                 
@@ -102,7 +105,7 @@ class productUpdate extends Command
             $since_id = end($products['products'])['id'];
             $page++;
         }
-        $this->info($this->description);
+        $this->info("Toatal Discount updated ( $total_update ) successfully.");
     }
 
     //--Count products.
