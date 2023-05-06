@@ -4,6 +4,10 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Services\ShopifyService;
+use Illuminate\Support\Facades\Http;
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+use App\Events\PodcastProcessed;
 
 class ShopifyController extends Controller
 {
@@ -30,6 +34,10 @@ class ShopifyController extends Controller
             $products = $this->shopifyService->getProducts($since_id);
             foreach ($products['products'] as $value) {
                 foreach ($value['variants'] as $variant) {
+                    if($variant['inventory_quantity'] == 0){
+                        //dd('watchlist clear. -> 1'); //--Manage watchlist api
+                        continue;
+                    }
                     if($variant['product_id'] == '8354369601855'){ //--Comment this line for production
                         $price = floatval($variant['price']);
                         $compare_at_price = floatval($variant['compare_at_price']);
@@ -68,8 +76,9 @@ class ShopifyController extends Controller
                             )
                         );
                         $response = $this->shopifyService->updateProductVariant($variant['id'], $variantData);
-                        if($round_count >= 16){
-                            dd('watchlist clear.'); //--Manage watchlist api
+                        $this->mailSend();
+                        if($round_count == 9 || $round_count >= 16){
+                            // event(new PodcastProcessed()); //--Remove this product watchlist.
                         }
                     }//--Comment this line for production
                 }
@@ -80,4 +89,40 @@ class ShopifyController extends Controller
         return true;
     }
     
+    public function getWatchlist(){}
+    public function addWatchlist(){}
+
+    public function clearWatchlist(){
+		$data = [
+			"product_id"=> 8354369601855,
+			"customer_id"=> 6967658217791,
+			"email"=> "jagdeep.singh109155@gmail.com",
+		];
+		// return $response->json();
+    }
+
+    private function mailSend(){
+        $mail = new PHPMailer();
+
+        // Email server settings
+        $mail->SMTPDebug = 0;
+        $mail->isSMTP();
+        $mail->Host = env('MAIL_HOST');
+        $mail->SMTPAuth = true;
+        $mail->Username = env('MAIL_USERNAME');
+        $mail->Password = env('MAIL_PASSWORD');
+        $mail->SMTPSecure = env('MAIL_ENCRYPTION');
+        $mail->Port = env('MAIL_PORT');
+        $mail->addAddress('govindersingh0595@gmail.com');
+        $mail->Subject = "Product discount increase";
+        $mail->isHTML(true);
+        $mail->Body = '<h2>Check now!</h2>';  
+        
+        // Send email  
+        if(!$mail->send()){  
+            echo 'Message could not be sent. Mailer Error: '.$mail->ErrorInfo;  
+        }else{  
+            echo 'Message has been sent.';  
+        }
+    }
 }

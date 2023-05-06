@@ -20,3 +20,4 @@ use App\Http\Controllers\ShopifyController;
 // });
 Route::get('/countProducts', 'App\Http\Controllers\ShopifyController@countProducts');
 Route::get('/getProducts', 'App\Http\Controllers\ShopifyController@getProducts');
+Route::get('/clearWatchlist', 'App\Http\Controllers\ShopifyController@clearWatchlist');
