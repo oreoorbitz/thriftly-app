@@ -26,6 +26,7 @@ class ShopifyController extends Controller
 
     public function getProducts()
     {
+        set_time_limit(1000);
         $count = $this->countProducts();
         $total_page = ceil($count['count']/50);
         $page = 1;
@@ -33,55 +34,57 @@ class ShopifyController extends Controller
         while($page <= $total_page){
             $products = $this->shopifyService->getProducts($since_id);
             foreach ($products['products'] as $value) {
+                //--Comment this line for production
+                // if($value['id'] != '8362488398143'){
+                //     continue;
+                // }
                 foreach ($value['variants'] as $variant) {
-                    if($variant['inventory_quantity'] == 0){
-                        //dd('watchlist clear. -> 1'); //--Manage watchlist api
+                    if($variant['inventory_quantity'] <= 0){
                         continue;
                     }
-                    if($variant['product_id'] == '8354369601855'){ //--Comment this line for production
-                        $price = floatval($variant['price']);
-                        $compare_at_price = floatval($variant['compare_at_price']);
-                        $percentage = ($price / $compare_at_price) * 100;
+                    $price = floatval($variant['price']);
+                    $compare_at_price = floatval($variant['compare_at_price']);
+                    $percentage = ($price / $compare_at_price) * 100;
 
-                        $round_count = 1;
-                        $metafield_id = null;
-                        $metafields = $this->shopifyService->getMetafield($variant['id']);
-                        foreach ($metafields['metafields'] as $metafield) {
-                            if($metafield['key'] == 'round_count'){
-                                if($metafield['value'] > 0){
-                                    $round_count = $metafield['value'] + 1;
-                                }
-                                $metafield_id = $metafield['id'];
+                    $round_count = 1;
+                    $metafield_id = null;
+                    $metafields = $this->shopifyService->getMetafield($variant['id']);
+                    foreach ($metafields['metafields'] as $metafield) {
+                        if($metafield['key'] == 'round_count'){
+                            if($metafield['value'] > 0){
+                                $round_count = $metafield['value'] + 1;
                             }
+                            $metafield_id = $metafield['id'];
                         }
-                        if($round_count > 16){
-                            continue;
-                        }
-                        if($percentage == 10 || $percentage == 100){
-                            $percentage = 90;
-                        }
-                        
-                        $final_price = ($compare_at_price * ($percentage - 10)) / 100;
-                        $variantData = array(
-                            'id' => $variant['id'],
-                            'price' => $final_price,
-                            'metafields' => array(
-                                array(
-                                    "id" => $metafield_id,
-                                    "key" => "round_count",
-                                    "value" => $round_count,
-                                    "type" => "number_integer",
-                                    "namespace" => "custom"
-                                )
+                    }
+                    if($round_count > 16){
+                        continue;
+                    }
+                    if($percentage == 10 || $percentage == 100){
+                        $percentage = 90;
+                    }
+                    
+                    $final_price = ($compare_at_price * ($percentage - 10)) / 100;
+                    $variantData = array(
+                        'id' => $variant['id'],
+                        'price' => $final_price,
+                        'metafields' => array(
+                            array(
+                                "id" => $metafield_id,
+                                "key" => "round_count",
+                                "value" => $round_count,
+                                "type" => "number_integer",
+                                "namespace" => "custom"
                             )
-                        );
-                        $response = $this->shopifyService->updateProductVariant($variant['id'], $variantData);
-                        $this->mailSend();
-                        if($round_count == 9 || $round_count >= 16){
-                            // event(new PodcastProcessed()); //--Remove this product watchlist.
-                        }
-                    }//--Comment this line for production
+                        )
+                    );
+                    $response = $this->shopifyService->updateProductVariant($variant['id'], $variantData);
+                    // $this->mailSend();
+                    if($round_count == 9 || $round_count >= 16){
+                        // event(new PodcastProcessed()); //--Remove this product watchlist.
+                    }
                 }
+                
             }
             $since_id = end($products['products'])['id'];
             $page++;
@@ -89,9 +92,13 @@ class ShopifyController extends Controller
         return true;
     }
     
+    //--Get watch list.
     public function getWatchlist(){}
+
+    //--Add watch list.
     public function addWatchlist(){}
 
+    //--Remove watch list.
     public function clearWatchlist(){
 		$data = [
 			"product_id"=> 8354369601855,
@@ -101,6 +108,7 @@ class ShopifyController extends Controller
 		// return $response->json();
     }
 
+    //--Send mail to customer.
     private function mailSend(){
         $mail = new PHPMailer();
 
