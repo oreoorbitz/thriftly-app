@@ -1,33 +1,50 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Console\Commands;
 
-use Illuminate\Http\Request;
+use Illuminate\Console\Command;
 use App\Services\ShopifyService;
-use Illuminate\Support\Facades\Http;
+use App\Events\PodcastProcessed;
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
-use App\Events\PodcastProcessed;
 
-class ShopifyController extends Controller
+class productUpdate extends Command
 {
+    /**
+     * The name and signature of the console command.
+     *
+     * @var string
+     */
+    protected $signature = 'product:update';
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Discount updated successfully.';
+
     protected $shopifyService;
 
+    /**
+     * Create a new command instance.
+     *
+     * @return void
+     */
     public function __construct(ShopifyService $shopifyService)
     {
+        parent::__construct();
         $this->shopifyService = $shopifyService;
     }
 
-    public function countProducts()
+    /**
+     * Execute the console command.
+     *
+     * @return int
+     */
+    public function handle()
     {
-        $products = $this->shopifyService->countProducts();
-        return $products;
-    }
-
-    public function getProducts()
-    {
-        dd('For developer only.');
-        set_time_limit(1000);
+        $total_update = 0;
         $count = $this->countProducts();
         $total_page = ceil($count['count']/50);
         $page = 1;
@@ -35,10 +52,6 @@ class ShopifyController extends Controller
         while($page <= $total_page){
             $products = $this->shopifyService->getProducts($since_id);
             foreach ($products['products'] as $value) {
-                //--Comment this line for production
-                // if($value['id'] != '8362488398143'){
-                //     continue;
-                // }
                 foreach ($value['variants'] as $variant) {
                     if($variant['inventory_quantity'] <= 0){
                         continue;
@@ -80,9 +93,11 @@ class ShopifyController extends Controller
                         )
                     );
                     $response = $this->shopifyService->updateProductVariant($variant['id'], $variantData);
+                    $this->info($value['handle']." => Updated.");
+                    $total_update++;
                     // $this->mailSend();
                     if($round_count == 9 || $round_count >= 16){
-                        // event(new PodcastProcessed()); //--Remove this product watchlist.
+                        //--Remove this product watchlist.
                     }
                 }
                 
@@ -90,23 +105,14 @@ class ShopifyController extends Controller
             $since_id = end($products['products'])['id'];
             $page++;
         }
-        return true;
+        $this->info("Toatal Discount updated ( $total_update ) successfully.");
     }
-    
-    //--Get watch list.
-    public function getWatchlist(){}
 
-    //--Add watch list.
-    public function addWatchlist(){}
-
-    //--Remove watch list.
-    public function clearWatchlist(){
-		$data = [
-			"product_id"=> 8354369601855,
-			"customer_id"=> 6967658217791,
-			"email"=> "jagdeep.singh109155@gmail.com",
-		];
-		// return $response->json();
+    //--Count products.
+    public function countProducts()
+    {
+        $products = $this->shopifyService->countProducts();
+        return $products;
     }
 
     //--Send mail to customer.
