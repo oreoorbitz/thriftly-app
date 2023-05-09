@@ -45,6 +45,7 @@ class productUpdate extends Command
     public function handle()
     {
         $total_update = 0;
+        $total_un_update = 0;
         $count = $this->countProducts();
         $total_page = ceil($count['count']/50);
         $page = 1;
@@ -56,48 +57,52 @@ class productUpdate extends Command
                     if($variant['inventory_quantity'] <= 0){
                         continue;
                     }
-                    $price = floatval($variant['price']);
-                    $compare_at_price = floatval($variant['compare_at_price']);
-                    $percentage = ($price / $compare_at_price) * 100;
-
-                    $round_count = 1;
-                    $metafield_id = null;
-                    $metafields = $this->shopifyService->getMetafield($variant['id']);
-                    foreach ($metafields['metafields'] as $metafield) {
-                        if($metafield['key'] == 'round_count'){
-                            if($metafield['value'] > 0){
-                                $round_count = $metafield['value'] + 1;
+                    try{
+                        $price = floatval($variant['price']);
+                        $compare_at_price = floatval($variant['compare_at_price']);
+                        $percentage = ($price / $compare_at_price) * 100;
+                        $round_count = 1;
+                        $metafield_id = null;
+                        $metafields = $this->shopifyService->getMetafield($variant['id']);
+                        foreach ($metafields['metafields'] as $metafield) {
+                            if($metafield['key'] == 'round_count'){
+                                if($metafield['value'] > 0){
+                                    $round_count = $metafield['value'] + 1;
+                                }
+                                $metafield_id = $metafield['id'];
                             }
-                            $metafield_id = $metafield['id'];
                         }
-                    }
-                    if($round_count > 16){
-                        continue;
-                    }
-                    if($percentage == 10 || $percentage == 100){
-                        $percentage = 90;
-                    }
-                    
-                    $final_price = ($compare_at_price * ($percentage - 10)) / 100;
-                    $variantData = array(
-                        'id' => $variant['id'],
-                        'price' => $final_price,
-                        'metafields' => array(
-                            array(
-                                "id" => $metafield_id,
-                                "key" => "round_count",
-                                "value" => $round_count,
-                                "type" => "number_integer",
-                                "namespace" => "custom"
+                        if($round_count > 16){
+                            continue;
+                        }
+                        if($percentage == 10 || $percentage == 100){
+                            $percentage = 90;
+                        }
+                        
+                        $final_price = ($compare_at_price * ($percentage - 10)) / 100;
+                        $variantData = array(
+                            'id' => $variant['id'],
+                            'price' => $final_price,
+                            'metafields' => array(
+                                array(
+                                    "id" => $metafield_id,
+                                    "key" => "round_count",
+                                    "value" => $round_count,
+                                    "type" => "number_integer",
+                                    "namespace" => "custom"
+                                )
                             )
-                        )
-                    );
-                    $response = $this->shopifyService->updateProductVariant($variant['id'], $variantData);
-                    $this->info($value['handle']." => Updated.");
-                    $total_update++;
-                    // $this->mailSend();
-                    if($round_count == 9 || $round_count >= 16){
-                        //--Remove this product watchlist.
+                        );
+                        $response = $this->shopifyService->updateProductVariant($variant['id'], $variantData);
+                        $this->info($value['handle']." => Updated.");
+                        $total_update++;
+                        // $this->mailSend();
+                        if($round_count == 9 || $round_count >= 16){
+                            //--Remove this product watchlist.
+                        }
+                    }catch (\Exception $e) {
+                        $this->info($value['handle']." => ********( Not Updated )*******");
+                        $total_un_update++;
                     }
                 }
                 
@@ -105,7 +110,7 @@ class productUpdate extends Command
             $since_id = end($products['products'])['id'];
             $page++;
         }
-        $this->info("Toatal Discount updated ( $total_update ) successfully.");
+        $this->info("Total Discount updated ( $total_update ) successfully.");
     }
 
     //--Count products.
