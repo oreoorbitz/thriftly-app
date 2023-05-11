@@ -100,6 +100,7 @@ class productUpdate extends Command
                                     )
                                 )
                             );
+                            
                             $response = $this->shopifyService->updateProductVariant($variant['id'], $variantData);
                             $this->info($value['handle']." => Updated.");
                             $total_update++;
@@ -111,8 +112,8 @@ class productUpdate extends Command
                             $this->info($value['handle']." => ********( Not Updated )*******");
                             $total_un_update++;
                         }
+                        sleep(1);
                     }
-                    
                 }
                 $since_id = end($products['products'])['id'];
             }
