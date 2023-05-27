@@ -16,8 +16,8 @@ class CreateWatchlistTable extends Migration
         Schema::create('watchlist', function (Blueprint $table) {
             $table->id();
             $table->string('product_id');
-            $table->string('customer_id');
-            $table->string('email');
+            $table->integer('watch_count');
+            $table->json('customer');
             $table->timestamps();
         });
     }
