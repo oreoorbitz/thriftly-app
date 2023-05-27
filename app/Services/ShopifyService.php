@@ -26,10 +26,17 @@ class ShopifyService
         return $response->json();
     }
 
+    public function getOneProducts($product_id)
+    {
+        $response = Http::withBasicAuth($this->api_key, $this->password)
+            ->get("https://{$this->store_url}/admin/api/{$this->version}/products/$product_id.json");
+        return $response->json();
+    }
+
     public function getProducts($since_id)
     {
         $response = Http::withBasicAuth($this->api_key, $this->password)
-            ->get("https://{$this->store_url}/admin/api/{$this->version}/products.json?fields=id,handle,variants&since_id=$since_id");
+            ->get("https://{$this->store_url}/admin/api/{$this->version}/products.json?fields=id,title,image,handle,variants&since_id=$since_id");
         return $response->json();
     }
 
