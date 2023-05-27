@@ -1,6 +1,5 @@
 <?php
 
-
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ShopifyController;
@@ -19,6 +18,7 @@ use App\Http\Controllers\ShopifyController;
 // Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 //     return $request->user();
 // });
-Route::get('/countProducts', 'App\Http\Controllers\ShopifyController@countProducts');
-Route::get('/getProducts', 'App\Http\Controllers\ShopifyController@getProducts');
-Route::get('/clearWatchlist', 'App\Http\Controllers\ShopifyController@clearWatchlist');
+
+Route::get('/getwatchlist', 'App\Http\Controllers\ShopifyController@getWatchlist')->middleware('cros');
+Route::post('/addwatchlist', 'App\Http\Controllers\ShopifyController@addWatchlist')->middleware('cros');
+Route::get('/clearwatchlist/{id}', 'App\Http\Controllers\ShopifyController@clearWatchlist')->middleware('cros');
