@@ -117,7 +117,7 @@ class productUpdate extends Command
                                     )
                                 )
                             );
-                            
+                            sleep(1);
                             $response = $this->shopifyService->updateProductVariant($variant['id'], $variantData);
                             $this->info($value['handle']." => Updated.");
                             $total_update++;
@@ -141,10 +141,10 @@ class productUpdate extends Command
 
                         }catch (\Exception $e) {
                             \Log::error($e);
-                            $this->info($value['handle']." => ********( Not Updated )*******");
+                            $this->info($value['handle']." => ********( Not Updated )*******".$e->getMessage());
                             $total_un_update++;
                         }
-                        sleep(1);
+                        // sleep(1);
                     }
                 }
                 $since_id = end($products['products'])['id'];
@@ -158,10 +158,10 @@ class productUpdate extends Command
             $this->info("Sending mail for price update...");
             $this->mailSend($collect_product, "", $collect_new_arrival);
         }
-        if($collect_soldout){
-            $this->info("Sending mail for sold out...");
-            $this->mailSend($collect_soldout, "sold", $collect_new_arrival);
-        }
+        // if($collect_soldout){
+        //     $this->info("Sending mail for sold out...");
+        //     $this->mailSend($collect_soldout, "sold", $collect_new_arrival);
+        // }
         $this->info("Done.");
 
         return true;
@@ -235,8 +235,8 @@ class productUpdate extends Command
                 $mail->isHTML(true);
 
                 if($stock == "sold"){
-                    $mail->Body = view('emails.sold_out', ['data' => $product, 'customer_name' => $name, 'new_arraival' => $collect_new_arrival])->render();
-                    $this->clearWatchlist($product['variants'][0]['id']);
+                    // $mail->Body = view('emails.sold_out', ['data' => $product, 'customer_name' => $name, 'new_arraival' => $collect_new_arrival])->render();
+                    // $this->clearWatchlist($product['variants'][0]['id']);
                 }else{
                     $mail->Body = view('emails.price_drop', ['data' => $product, 'customer_name' => $name, 'new_arraival' => $collect_new_arrival])->render();
                 }
